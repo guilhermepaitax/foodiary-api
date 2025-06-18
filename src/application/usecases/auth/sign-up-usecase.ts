@@ -3,8 +3,7 @@ import { Goal } from '@application/entities/goal';
 import { Profile } from '@application/entities/profile';
 import { EmailAlreadyInUse } from '@application/errors/application/email-already-in-use';
 import { AccountRepository } from '@infra/database/dynamo/repositories/account-repository';
-import { GoalRepository } from '@infra/database/dynamo/repositories/goal-repository';
-import { ProfileRepository } from '@infra/database/dynamo/repositories/profile-repository';
+import { SignUpUnitOfWork } from '@infra/database/dynamo/uow/sign-up-unit-of-work';
 import { AuthGateway } from '@infra/gateways/auth-gateway';
 import { Injectable } from '@kernel/decorators/injectable';
 
@@ -13,13 +12,12 @@ export class SignUpUseCase {
   constructor(
     private readonly authGateway: AuthGateway,
     private readonly accountRepository: AccountRepository,
-    private readonly profileRepository: ProfileRepository,
-    private readonly goalRepository: GoalRepository,
+    private readonly signUpUOW: SignUpUnitOfWork,
   ) {}
 
   public async execute({
     account: { email, password },
-    profile,
+    profile: profileInput,
   }: SignUpUseCase.Input): Promise<SignUpUseCase.Output> {
     const emailAlreadyExists = await this.accountRepository.findByEmail(email);
 
@@ -36,8 +34,8 @@ export class SignUpUseCase {
 
     account.externalId = externalId;
 
-    const newProfile = new Profile({
-      ...profile,
+    const profile = new Profile({
+      ...profileInput,
       accountId: account.id,
     });
 
@@ -49,11 +47,11 @@ export class SignUpUseCase {
       fats: 80,
     });
 
-    await Promise.all([
-      this.accountRepository.create(account),
-      this.profileRepository.create(newProfile),
-      this.goalRepository.create(goal),
-    ]);
+    await this.signUpUOW.run({
+      account,
+      profile,
+      goal,
+    });
 
     await this.accountRepository.create(account);
 
