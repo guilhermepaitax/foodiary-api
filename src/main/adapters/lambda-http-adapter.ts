@@ -1,29 +1,37 @@
 import type {
   APIGatewayProxyEventV2,
+  APIGatewayProxyEventV2WithJWTAuthorizer,
   APIGatewayProxyResultV2,
 } from 'aws-lambda';
 import { ZodError } from 'zod';
 
 import type { Controller } from '@application/contracts/Controller';
 
+import { ApplicationError } from '@application/errors/application/application-error';
 import { ErrorCode } from '@application/errors/error-code';
 import { HttpError } from '@application/errors/http/http-error';
 import { lambdaBodyParser } from '@main/utils/lambda-body-parser';
 import { lambdaErrorResponse } from '@main/utils/lambda-error-response';
 
-export function lambdaHttpAdapter(controller: Controller<unknown>) {
-  return async (
-    event: APIGatewayProxyEventV2,
-  ): Promise<APIGatewayProxyResultV2> => {
+type Event = APIGatewayProxyEventV2 | APIGatewayProxyEventV2WithJWTAuthorizer;
+
+export function lambdaHttpAdapter(controller: Controller<any, unknown>) {
+  return async (event: Event): Promise<APIGatewayProxyResultV2> => {
     try {
       const body = lambdaBodyParser(event.body);
       const params = event.pathParameters ?? {};
       const queryParams = event.queryStringParameters ?? {};
+      const accountId = (
+        'authorizer' in event.requestContext
+          ? event.requestContext.authorizer.jwt.claims.internalId as string
+          : null
+      );
 
       const response = await controller.execute({
         params,
         queryParams,
         body,
+        accountId,
       });
 
       return {
@@ -44,6 +52,14 @@ export function lambdaHttpAdapter(controller: Controller<unknown>) {
 
       if (error instanceof HttpError) {
         return lambdaErrorResponse(error);
+      }
+
+      if (error instanceof ApplicationError) {
+        return lambdaErrorResponse({
+          code: error.code,
+          message: error.message,
+          statusCode: error.statusCode ?? 400,
+        });
       }
 
       // eslint-disable-next-line no-console

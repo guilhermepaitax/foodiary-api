@@ -1,0 +1,33 @@
+Conditions:
+  ShouldSetupCustomDomain: !Not
+    - !Equals
+      - ${env:API_DOMAIN_NAME, ''}
+      - ""
+
+Resources:
+  APIGWCustomDomainCertificate:
+    Condition: ShouldSetupCustomDomain
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: ${env:API_DOMAIN_NAME, ''}
+      ValidationMethod: DNS
+
+  APIGWCustomDomain:
+    Condition: ShouldSetupCustomDomain
+    Type: AWS::ApiGatewayV2::DomainName
+    Properties:
+      DomainName: ${env:API_DOMAIN_NAME, ''}
+      RoutingMode: API_MAPPING_ONLY
+      DomainNameConfigurations:
+        - EndpointType: REGIONAL
+          IpAddressType: ipv4
+          SecurityPolicy: TLS_1_2
+          CertificateArn: !Ref APIGWCustomDomainCertificate
+
+  APIGWCustomDomainMapping:
+    Condition: ShouldSetupCustomDomain
+    Type: AWS::ApiGatewayV2::ApiMapping
+    Properties:
+      ApiId: !Ref HttpApi
+      DomainName: !Ref APIGWCustomDomain
+      Stage: $default
