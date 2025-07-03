@@ -2,7 +2,7 @@ import { Goal } from '@application/entities/goal';
 import type { AccountItem } from '@infra/database/dynamo/items/account-item';
 
 export class GoalItem {
-  private readonly type = 'Goal';
+  static readonly type = 'Goal';
 
   private readonly keys: GoalItem.Keys;
 
@@ -17,7 +17,7 @@ export class GoalItem {
     return {
       ...this.attributes,
       ...this.keys,
-      type: this.type,
+      type: GoalItem.type,
     };
   }
 

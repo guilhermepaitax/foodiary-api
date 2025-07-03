@@ -2,7 +2,7 @@ import { Profile } from '@application/entities/profile';
 import type { AccountItem } from '@infra/database/dynamo/items/account-item';
 
 export class ProfileItem {
-  private readonly type = 'Profile';
+  static readonly type = 'Profile';
 
   private readonly keys: ProfileItem.Keys;
 
@@ -17,7 +17,7 @@ export class ProfileItem {
     return {
       ...this.attributes,
       ...this.keys,
-      type: this.type,
+      type: ProfileItem.type,
     };
   }
 
@@ -38,6 +38,7 @@ export class ProfileItem {
       height: item.height,
       weight: item.weight,
       activityLevel: item.activityLevel,
+      goal: item.goal,
       createdAt: new Date(item.createdAt),
     });
   }
@@ -65,6 +66,7 @@ export namespace ProfileItem {
     height: number;
     weight: number;
     activityLevel: Profile.ActivityLevel;
+    goal: Profile.Goal;
     createdAt: string;
   };
 

@@ -1,0 +1,7 @@
+getMe:
+  handler: src/main/functions/accounts/get-me.handler
+  events:
+    - httpApi:
+        method: GET
+        path: /me
+        authorizer: CognitoAuthorizer
