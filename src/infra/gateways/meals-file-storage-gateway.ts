@@ -58,6 +58,14 @@ export class MealsFileStorageGateway {
 
     return { uploadSignature };
   }
+
+  getFileURL({
+    fileKey,
+  }: MealsFileStorageGateway.GetFileURLParams): string {
+    const cdnDomain = this.appConfig.cdn.mealsCDN;
+
+    return `https://${cdnDomain}/${fileKey}`;
+  }
 }
 
 export namespace MealsFileStorageGateway {
@@ -77,5 +85,9 @@ export namespace MealsFileStorageGateway {
 
   export type CreatePOSTResult = {
     uploadSignature: string;
+  }
+
+  export type GetFileURLParams = {
+    fileKey: string;
   }
 }
