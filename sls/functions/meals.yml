@@ -5,3 +5,19 @@ createMeal:
         method: POST
         path: /meals
         authorizer: CognitoAuthorizer
+
+getMealsByDay:
+  handler: src/main/functions/meals/get-meals-by-day.handler
+  events:
+    - httpApi:
+        method: GET
+        path: /meals
+        authorizer: CognitoAuthorizer
+
+getMealById:
+  handler: src/main/functions/meals/get-meal-by-id.handler
+  events:
+    - httpApi:
+        method: GET
+        path: /meals/{mealId}
+        authorizer: CognitoAuthorizer

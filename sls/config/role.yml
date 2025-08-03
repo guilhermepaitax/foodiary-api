@@ -2,6 +2,8 @@ statements:
   - Effect: Allow
     Action:
       - dynamodb:PutItem
+      - dynamodb:GetItem
+      - dynamodb:UpdateItem
       - dynamodb:Query
     Resource:
       - !GetAtt MainTable.Arn
@@ -11,3 +13,9 @@ statements:
       - cognito-idp:AdminDeleteUser
     Resource:
       - !GetAtt UserPool.Arn
+  - Effect: Allow
+    Action:
+      - s3:PutObject
+      - s3:GetObject
+      - s3:DeleteObject
+    Resource: !Sub "${MealsBucket.Arn}/*"

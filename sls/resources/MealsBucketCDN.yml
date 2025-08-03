@@ -1,0 +1,70 @@
+Conditions:
+  ShouldSetupMealsCDNCustomDomain: !And
+    - !Not
+      - !Equals
+        - ${env:MEALS_CDN_DOMAIN_NAME, ''}
+        - ""
+    - !Not
+      - !Equals
+        - ${env:MEALS_CDN_CERTIFICATE_ARN, ''}
+        - ""
+
+Resources:
+  MealsCDNOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: MealsCDNOAC
+        Description: OAC for MealsBucket
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  MealsBucketCDN:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        HttpVersion: http2and3
+        Aliases: !If
+          - ShouldSetupMealsCDNCustomDomain
+          - - ${env:MEALS_CDN_DOMAIN_NAME, ''}
+          - !Ref AWS::NoValue
+        ViewerCertificate: !If
+          - ShouldSetupMealsCDNCustomDomain
+          - AcmCertificateArn: ${env:MEALS_CDN_CERTIFICATE_ARN, ''}
+            MinimumProtocolVersion: TLSv1.2_2021
+            SslSupportMethod: sni-only
+          - CloudFrontDefaultCertificate: true
+        Origins:
+          - Id: S3Origin
+            S3OriginConfig: {}
+            DomainName: !GetAtt MealsBucket.RegionalDomainName
+            OriginAccessControlId: !Ref MealsCDNOAC
+        DefaultCacheBehavior:
+          Compress: true
+          ViewerProtocolPolicy: redirect-to-https
+          TargetOriginId: S3Origin
+          AllowedMethods:
+            - GET
+            - HEAD
+          # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html#managed-cache-caching-optimized
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # AWSManaged-CachingOptimized Policy
+
+  MealsBucketCDNPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref MealsBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Id: PolicyForCloudFrontPrivateContent
+        Statement:
+          - Sid: AllowCloudFrontServicePrincipal
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${MealsBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${MealsBucketCDN}"

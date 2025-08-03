@@ -5,7 +5,10 @@ import { env } from '@shared/config/env';
 @Injectable()
 export class AppConfig {
   readonly auth: AppConfig.Auth;
+
   readonly db: AppConfig.Database;
+
+  readonly storage: AppConfig.Storage;
 
   constructor() {
     this.auth = {
@@ -19,6 +22,12 @@ export class AppConfig {
     this.db = {
       dynamodb: {
         mainTable: env.MAIN_TABLE_NAME,
+      },
+    };
+
+    this.storage = {
+      s3: {
+        mealsBucket: env.MEALS_BUCKET,
       },
     };
   }
@@ -36,6 +45,12 @@ export namespace AppConfig {
   export type Database = {
     dynamodb: {
       mainTable: string;
+    };
+  };
+
+  export type Storage = {
+    s3: {
+      mealsBucket: string;
     };
   };
 }

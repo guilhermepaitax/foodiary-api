@@ -8,6 +8,9 @@ export const schema = z.object({
 
   // DynamoDB
   MAIN_TABLE_NAME: z.string().min(1, 'MAIN_TABLE_NAME is required'),
+
+  // S3
+  MEALS_BUCKET: z.string().min(1, 'MEALS_BUCKET is required'),
 });
 
 export const env = schema.parse(process.env);
