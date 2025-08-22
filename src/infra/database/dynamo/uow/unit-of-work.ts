@@ -15,6 +15,6 @@ export abstract class UnitOfWork {
       TransactItems: this.transactItems,
     });
 
-    return dynamoClient.send(command);
+    return await dynamoClient.send(command);
   }
 }

@@ -1,0 +1,35 @@
+Resources:
+  MealsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:service}-${self:provider.stage}-MealsQueue
+      VisibilityTimeout: 130 # 2 minutes and 10 seconds
+      ReceiveMessageWaitTimeSeconds: 20 # 20 seconds
+      RedrivePolicy:
+        maxReceiveCount: 2
+        deadLetterTargetArn: !GetAtt MealsDLQ.Arn
+
+  MealsDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:service}-${self:provider.stage}-MealsDLQ
+      MessageRetentionPeriod: 1209600 # 14 days
+
+  MealsQueueDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: ${self:service}-${self:provider.stage}-MealsQueueDLQAlarm
+      AlarmDescription: Triggered when messages are sent to the MealsDLQ
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt MealsDLQ.QueueName
+      Statistic: Average
+      Period: 60 # 1 minute
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref DLQAlarmsTopic

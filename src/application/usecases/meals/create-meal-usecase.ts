@@ -34,6 +34,7 @@ export class CreateMealUsecase {
           key: inputFileKey,
         },
         mealId: meal.id,
+        accountId,
       }),
     ]);
 

@@ -10,14 +10,18 @@ import type { Controller } from '@application/contracts/Controller';
 import { ApplicationError } from '@application/errors/application/application-error';
 import { ErrorCode } from '@application/errors/error-code';
 import { HttpError } from '@application/errors/http/http-error';
+import { Registry } from '@kernel/di/registry';
 import { lambdaBodyParser } from '@main/utils/lambda-body-parser';
 import { lambdaErrorResponse } from '@main/utils/lambda-error-response';
+import { Constructor } from '@shared/types/Constructor';
 
 type Event = APIGatewayProxyEventV2 | APIGatewayProxyEventV2WithJWTAuthorizer;
 
-export function lambdaHttpAdapter(controller: Controller<any, unknown>) {
+export function lambdaHttpAdapter(controllerImpl: Constructor<Controller<any, unknown>>) {
   return async (event: Event): Promise<APIGatewayProxyResultV2> => {
     try {
+      const controller = Registry.getInstace().resolve(controllerImpl);
+
       const body = lambdaBodyParser(event.body);
       const params = event.pathParameters ?? {};
       const queryParams = event.queryStringParameters ?? {};

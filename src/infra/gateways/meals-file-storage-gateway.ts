@@ -1,3 +1,4 @@
+import { HeadObjectCommand } from '@aws-sdk/client-s3';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import KSUID from 'ksuid';
 
@@ -8,7 +9,7 @@ import { AppConfig } from '@shared/config/app-config';
 
 @Injectable()
 export class MealsFileStorageGateway {
-  constructor(private readonly appConfig: AppConfig) {}
+  constructor(private readonly config: AppConfig) {}
 
   static generateInputFileKey({
     accountId,
@@ -23,8 +24,9 @@ export class MealsFileStorageGateway {
   async createPOST({
     file,
     mealId,
+    accountId,
   }: MealsFileStorageGateway.CreatePOSTParams): Promise<MealsFileStorageGateway.CreatePOSTResult> {
-    const bucket = this.appConfig.storage.s3.mealsBucket;
+    const bucket = this.config.storage.s3.mealsBucket;
 
     const { key, size, inputType } = file;
     const contentType = inputType === Meal.InputType.AUDIO ? 'audio/m4a' : 'image/jpeg';
@@ -43,6 +45,7 @@ export class MealsFileStorageGateway {
       ],
       Fields: {
         'x-amz-meta-mealid': mealId,
+        'x-amz-meta-accountid': accountId,
       },
     });
 
@@ -59,10 +62,30 @@ export class MealsFileStorageGateway {
     return { uploadSignature };
   }
 
+  async getFileMetadata({
+    fileKey,
+  }: MealsFileStorageGateway.GetFileMetadataParams): Promise<MealsFileStorageGateway.GetFileMetadataResult> {
+    const command = new HeadObjectCommand({
+      Bucket: this.config.storage.s3.mealsBucket,
+      Key: fileKey,
+    });
+
+    const { Metadata = {} } = await s3Client.send(command);
+
+    if (!Metadata.accountid || !Metadata.mealid) {
+      throw new Error(`[getFileMetadata] File metadata not found in "${fileKey}"`);
+    }
+
+    return {
+      accountId: Metadata.accountid,
+      mealId: Metadata.mealid,
+    };
+  }
+
   getFileURL({
     fileKey,
   }: MealsFileStorageGateway.GetFileURLParams): string {
-    const cdnDomain = this.appConfig.cdn.mealsCDN;
+    const cdnDomain = this.config.cdns.mealsCDN;
 
     return `https://${cdnDomain}/${fileKey}`;
   }
@@ -76,6 +99,7 @@ export namespace MealsFileStorageGateway {
 
   export type CreatePOSTParams = {
     mealId: string;
+    accountId: string;
     file: {
       key: string;
       size: number;
@@ -89,5 +113,14 @@ export namespace MealsFileStorageGateway {
 
   export type GetFileURLParams = {
     fileKey: string;
+  }
+
+  export type GetFileMetadataParams = {
+    fileKey: string;
+  }
+
+  export type GetFileMetadataResult = {
+    accountId: string;
+    mealId: string;
   }
 }

@@ -7,7 +7,7 @@ import { AppConfig } from '@shared/config/app-config';
 
 @Injectable()
 export class GetMealsByDayQuery {
-  constructor(private readonly appConfig: AppConfig) {}
+  constructor(private readonly config: AppConfig) {}
 
   async execute({
     accountId,
@@ -15,7 +15,7 @@ export class GetMealsByDayQuery {
   }: GetMealsByDayQuery.Input): Promise<GetMealsByDayQuery.Output> {
 
     const command = new QueryCommand({
-      TableName: this.appConfig.db.dynamodb.mainTable,
+      TableName: this.config.db.dynamodb.mainTable,
       IndexName: 'GSI1',
       ProjectionExpression: '#GSI1PK, #id, #name, #icon, #foods, #createdAt',
       KeyConditionExpression: '#GSI1PK = :GSI1PK',
