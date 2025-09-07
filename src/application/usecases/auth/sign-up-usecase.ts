@@ -65,8 +65,6 @@ export class SignUpUseCase {
         goal,
       });
 
-      await this.accountRepository.create(account);
-
       const { accessToken, refreshToken } = await this.authGateway.signIn({
         email,
         password,
